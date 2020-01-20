@@ -273,8 +273,8 @@ void updateBall(Ball *ball, unsigned int td) {
 
   if ((button1.down || button1.up) && ball->direction == LEFT) {
 
-    //----Man kann den Ball erst zurueckschicken, wenn er sich bis auf 1/4 des Stripes der eigneen Zone genaehert hat.
-    //----Aonat wird es zu langweilig, weil mansich durch "Dauerfeuer" gegenseitig im Mittelfeld halten kann.
+    //----Man kann den Ball erst zurueckschicken, wenn er sich bis auf 1/4 des Stripes der eigenen Zone genaehert hat.
+    //----Sonst wird es langweilig, weil man sich durch "Dauerfeuer" gegenseitig im Mittelfeld halten kann.
     if(ball->position<ZONEPLAYER1){
       ball->speed = SPEEDUP / ball->position ;
       ball->direction = RIGHT;
