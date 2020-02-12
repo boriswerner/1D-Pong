@@ -3,10 +3,9 @@
 #define PIXELS 42
 #define SPEEDUP 100
 #define LED_PIN 2
-#define BUTTON1_PIN A3
-#define BUTTON1_GND_PIN A2
-#define BUTTON2_PIN A1
-#define BUTTON2_GND_PIN A0
+#define BUTTON1_PIN 3
+#define BUTTON2_PIN 5
+#define BUZZER_PIN 11
 
 #define DEBUG
 #define INITIALSPEED 13
@@ -20,7 +19,7 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXELS, LED_PIN, NEO_GRB + NEO_KHZ80
 typedef enum {LEFT, RIGHT} side_type;
 
 bool quit = false;
-
+bool buzzer = false;
 struct Button {
   int pin;
   bool down;    // button has been released just now
@@ -52,13 +51,10 @@ void setup() {
 #ifdef DEBUG
   Serial.begin(9600);
 #endif
+  pinMode(buzzer, OUTPUT); // Set buzzer - pin 9 as an output
 
-  // initialize virtual GND Pins
-  pinMode(BUTTON1_GND_PIN, OUTPUT);
-  pinMode(BUTTON2_GND_PIN, OUTPUT);
-
-  digitalWrite(BUTTON1_GND_PIN, LOW);
-  digitalWrite(BUTTON2_GND_PIN, LOW);
+  pinMode(BUTTON1_PIN, INPUT_PULLUP);
+  pinMode(BUTTON2_PIN, INPUT_PULLUP);
 
   button1 = (Button) {
     .pin = BUTTON1_PIN
@@ -68,23 +64,20 @@ void setup() {
     .pin = BUTTON2_PIN
   };
 
-  pinMode(button1.pin, INPUT_PULLUP);
-  pinMode(button2.pin, INPUT_PULLUP);
-
   strip.begin();
   // Range from 0-255, so 100 is a bit less than 50% brightness
   strip.setBrightness(40);
   strip.show();
 
   ball = (Ball) {
-    .color = strip.Color(255, 0, 0),
+    .color = strip.Color(255, 255, 255),
      .position = PIXELS / 2,
       .direction = LEFT,
        .speed = INITIALSPEED
   };
 
   p1 = (Player) {
-    .color = strip.Color(255, 80, 0),
+    .color = strip.Color(255, 0, 0),
      .lives = INITIAL_LIVES,
       .side = LEFT,
   };
@@ -140,8 +133,7 @@ void processButtonInput(Button *button) {
 
   int state = digitalRead(button->pin);
 
-
-  bool newPressed = state == HIGH;
+  bool newPressed = state == LOW;
 
   if (prevPressed && !newPressed) { // just released
     button->up = true;
@@ -187,17 +179,18 @@ void colorWipe(uint32_t c, uint8_t wait) {
 void drawWinnerR() {
 
   if (p2.lives == 1) {
+    tone(BUZZER_PIN, 150);
     colorWipe(p1.color , 100);
+    noTone(BUZZER_PIN);
   }
 }
 
 void drawWinnerL() {
-
-
-if (p1.lives == 1) {
-  colorWipe(p2.color , 100);
-}
-
+  if (p1.lives == 1) {
+    tone(BUZZER_PIN, 150);
+    colorWipe(p2.color , 100);
+    noTone(BUZZER_PIN);
+  }
 }
 
 void drawGame()
@@ -207,8 +200,8 @@ void drawGame()
   renderPlayer(&p2);
   renderBall(&ball);
 
-  strip.setPixelColor(ZONEPLAYER1, 50, 50, 50);
-  strip.setPixelColor(ZONEPLAYER2, 50, 50, 50);
+  strip.setPixelColor(ZONEPLAYER1, 25, 0, 0);
+  strip.setPixelColor(ZONEPLAYER2, 0, 0, 25);
   strip.show();
   Serial.println("Player1:");
   Serial.println(p1.lives);
@@ -218,11 +211,13 @@ void drawGame()
 
 void drawLostAnimation()
 {
+  tone(BUZZER_PIN, 250);
   setAllTo(strip.Color(255, 255, 255));
   strip.show();
   delay(200);
   setAllTo(strip.Color(0, 0, 0));
   strip.show();
+  noTone(BUZZER_PIN);
 }
 
 void drawStrobo()
@@ -278,6 +273,7 @@ void updateBall(Ball *ball, unsigned int td) {
     if(ball->position<ZONEPLAYER1){
       ball->speed = SPEEDUP / ball->position ;
       ball->direction = RIGHT;
+      tone(BUZZER_PIN, 1000);
     }else{
       /*
       drawLostAnimation();
@@ -294,6 +290,7 @@ void updateBall(Ball *ball, unsigned int td) {
     if(ball->position>ZONEPLAYER2){
       ball->speed = SPEEDUP / (PIXELS - ball->position);
       ball->direction = LEFT;
+      tone(BUZZER_PIN, 1000);
     }else{
       /*
       drawLostAnimation();
@@ -336,6 +333,7 @@ void updateBall(Ball *ball, unsigned int td) {
 
 void update(unsigned int td)
 {
+  noTone(BUZZER_PIN);
   updateBall(&ball, td);
   if (0 == p1.lives)
   {
